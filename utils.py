@@ -51,6 +51,7 @@ def get_filenames(path):
 
 
 def data_pipeline(path, batch_size=32):
+    # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
     ds = tf.data.Dataset.from_tensor_slices(filenames)
     ds = ds.shuffle(len(filenames))
@@ -61,7 +62,20 @@ def data_pipeline(path, batch_size=32):
     return ds
 
 
-def imshow(image):
-    cv2.imshow('image', image)
+def imshow(image, title='img'):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    cv2.imshow(title, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+if __name__ == '__main__':
+    # Demonstration of pipeline usage
+    tf.random.set_seed(42)
+    ds = data_pipeline('data/images/train')
+    iterator = ds.as_numpy_iterator()
+    batch = next(iterator)
+    rows = np.split(batch, 4, axis=0) # type: ignore
+    imshow(np.concatenate(np.concatenate(rows, axis=1), axis=1), 'first batch')
+
+
