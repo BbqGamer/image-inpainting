@@ -5,15 +5,28 @@ import tensorflow as tf
 
 
 def mask_image(img):
+    """Creates random mask based on image shape and returns masked images
+       mask consists of 1 to 10 shapes (rectangles, circles, lines)
+    """
     img = img.numpy()
-    h = img.shape[0]
-    w = img.shape[1]
-    mask = np.ones((h, w), dtype=np.uint8)
+    height, width, _ = img.shape
+    mask = np.ones((height, width), dtype=np.uint8)
     for _ in range(np.random.randint(1, 10)):
-        x1, x2 = np.random.randint(0, w), np.random.randint(0, w)
-        y1, y2 = np.random.randint(0, h), np.random.randint(0, h)
-        thickness = np.random.randint(10, 50)
-        cv2.line(mask,(x1,y1),(x2,y2),(0,0,0),thickness)
+        x = np.random.randint(0, width)
+        y = np.random.randint(0, height)
+        shape = np.random.randint(0, 3)
+        if shape == 0:
+            w = np.random.randint(width // 8, width // 4)
+            h = np.random.randint(height // 8, height // 4)
+            cv2.rectangle(mask, (x - w//2, y - h//2), (x+w, y+h), (0, 0, 0), -1)
+        elif shape == 1:
+            r = np.random.randint(height // 8, height // 4) // 2
+            cv2.circle(mask, (x, y), r, (0, 0, 0), -1)
+        else:
+            x2 = np.random.randint(0, width)
+            y2 = np.random.randint(0, height)
+            thickness = np.random.randint(width // 16, width // 8)
+            cv2.line(mask, (x, y), (x2, y2), (0, 0, 0), thickness)
     return cv2.bitwise_and(img, img, mask=mask)
 
 
@@ -47,3 +60,8 @@ def data_pipeline(path, batch_size=32):
     ds = ds.prefetch(1)
     return ds
 
+
+def imshow(image):
+    cv2.imshow('image', image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
