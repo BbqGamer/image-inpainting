@@ -34,6 +34,11 @@ def augment(img):
     """Creates random mask based on image shape"""
     return tf.py_function(func=mask_image, inp=[img], Tout=[tf.float32, tf.uint8, tf.float32])
 
+def shapes(masked, mask, imgs):
+    masked = tf.ensure_shape(masked, (256, 256, 3))
+    mask = tf.ensure_shape(mask, (256, 256))
+    img = tf.ensure_shape(imgs, (256, 256, 3))
+    return (masked, mask), img
 
 def parse(filename):
     image_string = tf.io.read_file(filename)
@@ -49,7 +54,6 @@ def get_filenames(path):
             filenames.append(path + '/' + label + '/' + file)
     return filenames
 
-
 def data_pipeline(path, batch_size=32):
     # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
@@ -57,6 +61,7 @@ def data_pipeline(path, batch_size=32):
     ds = ds.shuffle(len(filenames))
     ds = ds.map(parse, num_parallel_calls=4)
     ds = ds.map(augment, num_parallel_calls=4)
+    ds = ds.map(shapes, num_parallel_calls=4)
     ds = ds.batch(batch_size)
     ds = ds.prefetch(1)
     return ds
@@ -67,7 +72,7 @@ def imshow(image, title='img'):
     cv2.imshow(title, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
+ 
 
 if __name__ == '__main__':
     # Demonstration of pipeline usage
@@ -75,7 +80,7 @@ if __name__ == '__main__':
     ds = data_pipeline('data/images/train')
     iterator = ds.as_numpy_iterator()
     batch = next(iterator)
-    masked, masks, imgs = batch # type: ignore
+    (masked, masks), imgs = batch # type: ignore
     maskedc = np.concatenate(masked[:6], axis=1) 
     masksc = cv2.cvtColor(np.concatenate(masks[:6], axis=1), cv2.COLOR_GRAY2BGR)
     imgsc = np.concatenate(imgs[:6], axis=1)
