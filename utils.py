@@ -27,12 +27,12 @@ def mask_image(img):
             y2 = np.random.randint(0, height)
             thickness = np.random.randint(width // 16, width // 8)
             cv2.line(mask, (x, y), (x2, y2), (0, 0, 0), thickness)
-    return cv2.bitwise_and(img, img, mask=mask)
+    return cv2.bitwise_and(img, img, mask=mask), 1 - mask, img
 
 
 def augment(img):
     """Creates random mask based on image shape"""
-    return tf.py_function(func=mask_image, inp=[img], Tout=tf.float32)
+    return tf.py_function(func=mask_image, inp=[img], Tout=[tf.float32, tf.uint8, tf.float32])
 
 
 def parse(filename):
@@ -75,7 +75,9 @@ if __name__ == '__main__':
     ds = data_pipeline('data/images/train')
     iterator = ds.as_numpy_iterator()
     batch = next(iterator)
-    rows = np.split(batch, 4, axis=0) # type: ignore
-    imshow(np.concatenate(np.concatenate(rows, axis=1), axis=1), 'first batch')
-
+    masked, masks, imgs = batch # type: ignore
+    maskedc = np.concatenate(masked[:6], axis=1) 
+    masksc = cv2.cvtColor(np.concatenate(masks[:6], axis=1), cv2.COLOR_GRAY2BGR)
+    imgsc = np.concatenate(imgs[:6], axis=1)
+    imshow(np.concatenate([maskedc, masksc, imgsc], axis=0), '6 examples from first batch')
 
