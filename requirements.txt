@@ -1,0 +1,5 @@
+opencv-headless
+tensorflow
+numpy
+wandb
+pillow
