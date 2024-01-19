@@ -1,5 +1,7 @@
-opencv-headless
+opencv-python-headless
 tensorflow
 numpy
 wandb
 pillow
+dvc
+dvc-gdrive
