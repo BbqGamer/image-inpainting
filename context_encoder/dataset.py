@@ -3,6 +3,7 @@ import cv2
 import os
 import tensorflow as tf
 
+AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 MASK_START = 96
 MASK_SIZE = 64
@@ -43,13 +44,16 @@ def get_filenames(path):
     return filenames
 
 
-def data_pipeline(path, batch_size=32):
+def data_pipeline(path, batch_size=32, cache=True):
     # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
     ds = tf.data.Dataset.from_tensor_slices(filenames)
     ds = ds.shuffle(len(filenames))
-    ds = ds.map(parse, num_parallel_calls=4)
-    ds = ds.map(get_masked_image, num_parallel_calls=4)
+    ds = ds.map(parse, num_parallel_calls=AUTOTUNE)
+    ds = ds.map(get_masked_image, num_parallel_calls=AUTOTUNE)
+    if cache:
+        ds = ds.cache()
+    ds = ds.shuffle(buffer_size=10000)
     ds = ds.batch(batch_size)
     ds = ds.prefetch(1)
     return ds
