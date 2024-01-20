@@ -5,7 +5,8 @@ from model import context_encoder
 import wandb
 from wandb.keras import WandbCallback
 import keras
-import numpy as np
+
+tf.random.set_seed(42)
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -15,8 +16,8 @@ BATCH_SIZE = 32
 ds = data_pipeline(path, batch_size=BATCH_SIZE)
 
 VAL_SIZE = int(0.2 * len(ds))
-train = ds.skip(VAL_SIZE)
-val = ds.take(VAL_SIZE)
+train = ds.skip(VAL_SIZE).shuffle(1000).batch(BATCH_SIZE).prefetch(1)
+val = ds.take(VAL_SIZE).batch(BATCH_SIZE).prefetch(1)
 to_print = val.take(1)
 
 model = context_encoder()
@@ -26,7 +27,7 @@ wandb.init(project="inpainting")
 
 
 class ImageCallback(keras.callbacks.Callback):
-    def on_epoch_begin(self, epoch, logs=None):
+    def on_epoch_end(self, epoch, logs=None):
         X, y = next(iter(to_print))
         preds = model.predict(X).numpy()
         original = X.numpy()

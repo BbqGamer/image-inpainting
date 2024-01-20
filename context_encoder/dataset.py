@@ -48,12 +48,12 @@ def data_pipeline(path, batch_size=32, cache=True):
     # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
     ds = tf.data.Dataset.from_tensor_slices(filenames)
-    ds = ds.shuffle(len(filenames))
+    ds = ds.shuffle(len(filenames), reshuffle_each_iteration=False)
     ds = ds.map(parse, num_parallel_calls=AUTOTUNE)
     ds = ds.map(get_masked_image, num_parallel_calls=AUTOTUNE)
     if cache:
         ds = ds.cache()
-    ds = ds.shuffle(buffer_size=10000)
+    ds = ds.shuffle(buffer_size=1000)
     ds = ds.batch(batch_size)
     ds = ds.prefetch(1)
     return ds

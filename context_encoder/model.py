@@ -79,6 +79,27 @@ def context_encoder(input_shape=(256, 256, 3)):
     return model
 
 
+def get_discriminator():
+    discriminator = keras.models.Sequential(name='discriminator')
+    discriminator.add(keras.layers.Input((64, 64, 3)))
+    discriminator.add(keras.layers.Conv2D(
+        64, (3, 3), activation='relu', padding='same'))
+    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+    discriminator.add(keras.layers.Conv2D(
+        128, (3, 3), activation='relu', padding='same'))
+    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+    discriminator.add(keras.layers.Conv2D(
+        256, (3, 3), activation='relu', padding='same'))
+    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+    discriminator.add(keras.layers.Conv2D(
+        512, (3, 3), activation='relu', padding='same'))
+    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+    discriminator.add(keras.layers.Flatten())
+    discriminator.add(keras.layers.Dense(256, activation='relu'))
+    discriminator.add(keras.layers.Dense(1, activation='sigmoid'))
+    return discriminator
+
+
 if __name__ == '__main__':
     model = context_encoder()
     model.summary(expand_nested=True)
@@ -90,3 +111,6 @@ if __name__ == '__main__':
     output = model(input)
     end = time.time()
     print("Took {:.2f} seconds".format(end - start))
+
+    D = get_discriminator()
+    D.summary()
