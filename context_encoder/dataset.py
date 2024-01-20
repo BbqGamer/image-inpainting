@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import os
 import tensorflow as tf
+import sys
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -44,16 +45,18 @@ def get_filenames(path):
     return filenames
 
 
-def data_pipeline(path, batch_size=32, cache=True):
+def data_pipeline(path, batch_size=32, cache=True, shuffle=True):
     # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
     ds = tf.data.Dataset.from_tensor_slices(filenames)
-    ds = ds.shuffle(len(filenames), reshuffle_each_iteration=False)
+    if shuffle:
+        ds = ds.shuffle(len(filenames), reshuffle_each_iteration=False)
     ds = ds.map(parse, num_parallel_calls=AUTOTUNE)
     ds = ds.map(get_masked_image, num_parallel_calls=AUTOTUNE)
     if cache:
         ds = ds.cache()
-    ds = ds.shuffle(buffer_size=1000)
+    if shuffle:
+        ds = ds.shuffle(buffer_size=1000)
     ds = ds.batch(batch_size)
     ds = ds.prefetch(1)
     return ds
@@ -68,10 +71,15 @@ def imshow(image, title='img'):
 
 if __name__ == '__main__':
     # Demonstration of pipeline usage
+    if len(sys.argv) < 2:
+        path = 'data/train'
+    else:
+        path = sys.argv[1]
+
     tf.random.set_seed(42)
-    ds = data_pipeline('../data/images/train')
+    ds = data_pipeline(path)
     iterator = ds.as_numpy_iterator()
-    X, y = next(iterator)
+    X, y = next(iterator)  # type: ignore
     Xs = np.concatenate(X[:6], axis=1)
     ys = np.concatenate(y[:6], axis=1)
     imshow(Xs)

@@ -1,46 +1,75 @@
 import tensorflow as tf
 import sys
 from dataset import data_pipeline
-from model import context_encoder
+from context_encoder.model import context_encoder
 import wandb
 from wandb.keras import WandbCallback
 import keras
+import numpy as np
 
 tf.random.set_seed(42)
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-path = sys.argv[1]
 
-BATCH_SIZE = 32
-ds = data_pipeline(path, batch_size=BATCH_SIZE)
-
-VAL_SIZE = int(0.2 * len(ds))
-train = ds.skip(VAL_SIZE).shuffle(1000).batch(BATCH_SIZE).prefetch(1)
-val = ds.take(VAL_SIZE).batch(BATCH_SIZE).prefetch(1)
-to_print = val.take(1)
-
-model = context_encoder()
-model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-
-wandb.init(project="inpainting")
+def dice_coef(y_true, y_pred):
+    y_true_f = keras.backend.flatten(y_true)
+    y_pred_f = keras.backend.flatten(y_pred)
+    intersection = keras.backend.sum(y_true_f * y_pred_f)
+    return (2. * intersection) / (keras.backend.sum(y_true_f + y_pred_f))
 
 
-class ImageCallback(keras.callbacks.Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        X, y = next(iter(to_print))
-        preds = model.predict(X).numpy()
-        original = X.numpy()
-        predicted = original.copy()
-        original[:, 96:160, 96:160] = y.numpy()
-        predicted[:, 96:160, 96:160] = preds
-        original = np.concatenate(original, axis=1)
-        predicted = np.concatenate(predicted, axis=1)
-        res = np.concatenate([original, predicted], axis=0)
-        images = wandb.Image(res)
-        wandb.log({"images": images})
+def train(loss_fn, optimizer, path):
+    EPOCHS = 400
+    BATCH_SIZE = 32
+    train = data_pipeline(path + '/train', batch_size=BATCH_SIZE)
+    val = data_pipeline(path + '/val', batch_size=BATCH_SIZE)
+
+    X_log, y_log = next(iter(val.take(1)))
+
+    model = context_encoder()
+    model.compile(optimizer=optimizer, loss=loss_fn,
+                  metrics=['mae', 'mse', dice_coef])
+
+    class ImageCallback(keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs=None):
+            preds = model.predict(X_log).numpy()
+            original = X_log.numpy()
+            predicted = original.copy()
+            original[:, 96:160, 96:160] = y_log.numpy()
+            predicted[:, 96:160, 96:160] = preds
+            original = np.concatenate(original, axis=1)
+            predicted = np.concatenate(predicted, axis=1)
+            res = np.concatenate([original, predicted], axis=0)
+            images = wandb.Image(res)
+            wandb.log({"images": images})
+
+    wandb.init(
+        project="inpainting",
+        name="context_encoder",
+        config={
+            "loss": loss_fn,
+            "optimizer": optimizer,
+            "epochs": EPOCHS,
+            "batch_size": BATCH_SIZE,
+        }
+    )
+
+    model.fit(train, validation_data=val, epochs=EPOCHS,
+              callbacks=[WandbCallback(), ImageCallback()])
+
+    wandb.finish()
 
 
-EPOCHS = 100
-model.fit(train, validation_data=val, epochs=EPOCHS,
-          callbacks=[WandbCallback()])
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        path = 'data'
+    else:
+        path = sys.argv[1]
+
+    losses = ['mse', 'mae']
+    optimizers = ['adam', 'sgd', 'rmsprop']
+
+    for loss in losses:
+        for optimizer in optimizers:
+            train(loss, optimizer, path)

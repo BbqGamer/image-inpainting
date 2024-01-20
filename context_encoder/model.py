@@ -21,13 +21,14 @@ class ChannelwiseFullyConnected(keras.layers.Layer):
         # Reshape the input tensor to treat each channel as an independent feature
         input_shape = tf.shape(inputs)
         flattened_inputs = tf.reshape(
-            inputs, [input_shape[0], -1, input_shape[-1]])
+            inputs, [input_shape[0], -1, input_shape[-1]])  # type: ignore
 
         # Perform standard fully connected operation for each channel independently
         outputs = tf.matmul(flattened_inputs, self.kernel)
 
         # Reshape the output back to the original shape
-        output_shape = tf.concat([input_shape[:-1], [self.units]], axis=0)
+        output_shape = tf.concat(
+            [input_shape[:-1], [self.units]], axis=0)  # type: ignore
         outputs = tf.reshape(outputs, output_shape)
 
         if self.activation is not None:
@@ -79,27 +80,6 @@ def context_encoder(input_shape=(256, 256, 3)):
     return model
 
 
-def get_discriminator():
-    discriminator = keras.models.Sequential(name='discriminator')
-    discriminator.add(keras.layers.Input((64, 64, 3)))
-    discriminator.add(keras.layers.Conv2D(
-        64, (3, 3), activation='relu', padding='same'))
-    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    discriminator.add(keras.layers.Conv2D(
-        128, (3, 3), activation='relu', padding='same'))
-    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    discriminator.add(keras.layers.Conv2D(
-        256, (3, 3), activation='relu', padding='same'))
-    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    discriminator.add(keras.layers.Conv2D(
-        512, (3, 3), activation='relu', padding='same'))
-    discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    discriminator.add(keras.layers.Flatten())
-    discriminator.add(keras.layers.Dense(256, activation='relu'))
-    discriminator.add(keras.layers.Dense(1, activation='sigmoid'))
-    return discriminator
-
-
 if __name__ == '__main__':
     model = context_encoder()
     model.summary(expand_nested=True)
@@ -111,6 +91,3 @@ if __name__ == '__main__':
     output = model(input)
     end = time.time()
     print("Took {:.2f} seconds".format(end - start))
-
-    D = get_discriminator()
-    D.summary()
