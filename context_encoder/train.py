@@ -19,7 +19,7 @@ def dice_coef(y_true, y_pred):
     return (2. * intersection) / (keras.backend.sum(y_true_f + y_pred_f))
 
 
-def train(loss_fn, optimizer, path):
+def train(loss_fn, optimizer, path, run):
     EPOCHS = 400
     BATCH_SIZE = 32
     train = data_pipeline(path + '/train', batch_size=BATCH_SIZE)
@@ -46,7 +46,7 @@ def train(loss_fn, optimizer, path):
 
     wandb.init(
         project="inpainting",
-        name="context_encoder",
+        name="context_encoder" + str(run),
         config={
             "loss": loss_fn,
             "optimizer": optimizer,
@@ -56,7 +56,9 @@ def train(loss_fn, optimizer, path):
     )
 
     model.fit(train, validation_data=val, epochs=EPOCHS,
-              callbacks=[WandbCallback(), ImageCallback()])
+              callbacks=[WandbCallback(save_model=False), ImageCallback()])
+
+    model.save(f'models/context_encoder{run}.h5')
 
     wandb.finish()
 
@@ -70,6 +72,8 @@ if __name__ == '__main__':
     losses = ['mse', 'mae']
     optimizers = ['adam', 'sgd', 'rmsprop']
 
+    run = 0
     for loss in losses:
         for optimizer in optimizers:
-            train(loss, optimizer, path)
+            train(loss, optimizer, path, run)
+            run += 1
