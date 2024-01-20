@@ -45,16 +45,26 @@ def get_filenames(path):
     return filenames
 
 
-def data_pipeline(path, batch_size=32, cache=True, shuffle=True):
+def augment_data(image):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
+    image = tf.image.random_brightness(image, max_delta=0.1)
+    image = tf.image.random_contrast(image, lower=0.9, upper=1.1)
+    return image
+
+
+def data_pipeline(path, batch_size=32, cache=True, shuffle=True, augment=True):
     # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
     ds = tf.data.Dataset.from_tensor_slices(filenames)
     if shuffle:
         ds = ds.shuffle(len(filenames), reshuffle_each_iteration=False)
     ds = ds.map(parse, num_parallel_calls=AUTOTUNE)
-    ds = ds.map(get_masked_image, num_parallel_calls=AUTOTUNE)
+    if augment:
+        ds = ds.map(augment_data, num_parallel_calls=AUTOTUNE)
     if cache:
         ds = ds.cache()
+    ds = ds.map(get_masked_image, num_parallel_calls=AUTOTUNE)
     if shuffle:
         ds = ds.shuffle(buffer_size=1000)
     ds = ds.batch(batch_size)
@@ -80,7 +90,7 @@ if __name__ == '__main__':
     ds = data_pipeline(path)
     iterator = ds.as_numpy_iterator()
     X, y = next(iterator)  # type: ignore
-    Xs = np.concatenate(X[:6], axis=1)
-    ys = np.concatenate(y[:6], axis=1)
+    Xs = np.concatenate(X[:7], axis=1)
+    ys = np.concatenate(y[:7], axis=1)
     imshow(Xs)
     imshow(ys)

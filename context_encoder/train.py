@@ -23,7 +23,7 @@ def train(loss_fn, optimizer, path):
     EPOCHS = 400
     BATCH_SIZE = 32
     train = data_pipeline(path + '/train', batch_size=BATCH_SIZE)
-    val = data_pipeline(path + '/val', batch_size=BATCH_SIZE)
+    val = data_pipeline(path + '/val', batch_size=BATCH_SIZE, augment=False)
 
     X_log, y_log = next(iter(val.take(1)))
 
@@ -33,7 +33,7 @@ def train(loss_fn, optimizer, path):
 
     class ImageCallback(keras.callbacks.Callback):
         def on_epoch_end(self, epoch, logs=None):
-            preds = model.predict(X_log).numpy()
+            preds = model.predict(X_log)
             original = X_log.numpy()
             predicted = original.copy()
             original[:, 96:160, 96:160] = y_log.numpy()
