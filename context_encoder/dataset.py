@@ -19,6 +19,7 @@ def get_masked_image(image):
     """Draw 128x128 bounding box on the image using only tf operations"""
     X = image * mask
     y = image[MASK_START:MASK_END, MASK_START:MASK_END]
+    y = tf.ensure_shape(y, (MASK_SIZE, MASK_SIZE, 3))
     return X, y
 
 
@@ -53,9 +54,11 @@ def augment_data(image):
     return image
 
 
-def data_pipeline(path, batch_size=32, cache=True, shuffle=True, augment=True):
+def data_pipeline(path, batch_size=32, cache=True, shuffle=True, augment=True, small=False):
     # https://cs230.stanford.edu/blog/datapipeline/#goals-of-this-tutorial
     filenames = get_filenames(path)
+    if small:
+        filenames = filenames[:32]
     ds = tf.data.Dataset.from_tensor_slices(filenames)
     if shuffle:
         ds = ds.shuffle(len(filenames), reshuffle_each_iteration=False)
@@ -67,7 +70,7 @@ def data_pipeline(path, batch_size=32, cache=True, shuffle=True, augment=True):
     ds = ds.map(get_masked_image, num_parallel_calls=AUTOTUNE)
     if shuffle:
         ds = ds.shuffle(buffer_size=1000)
-    ds = ds.batch(batch_size)
+    ds = ds.batch(batch_size, drop_remainder=True)
     ds = ds.prefetch(1)
     return ds
 
