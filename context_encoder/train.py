@@ -1,15 +1,14 @@
 import tensorflow as tf
 import sys
-from dataset import data_pipeline
+from context_encoder.dataset import data_pipeline
 from context_encoder.model import context_encoder
+from context_encoder.utils import log_images
 import wandb
 from wandb.keras import WandbCallback
 import keras
 import numpy as np
 
 tf.random.set_seed(42)
-
-AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
 def dice_coef(y_true, y_pred):
@@ -33,16 +32,7 @@ def train(loss_fn, optimizer, path, run):
 
     class ImageCallback(keras.callbacks.Callback):
         def on_epoch_end(self, epoch, logs=None):
-            preds = model.predict(X_log)
-            original = X_log.numpy()
-            predicted = original.copy()
-            original[:, 96:160, 96:160] = y_log.numpy()
-            predicted[:, 96:160, 96:160] = preds
-            original = np.concatenate(original, axis=1)
-            predicted = np.concatenate(predicted, axis=1)
-            res = np.concatenate([original, predicted], axis=0)
-            images = wandb.Image(res)
-            wandb.log({"images": images})
+            log_images(model, X_log, y_log, epoch)
 
     wandb.init(
         project="inpainting",
@@ -56,7 +46,8 @@ def train(loss_fn, optimizer, path, run):
     )
 
     model.fit(train, validation_data=val, epochs=EPOCHS,
-              callbacks=[WandbCallback(save_model=False), ImageCallback()])
+              callbacks=[WandbCallback(save_model=False), ImageCallback(),
+                         keras.callbacks.EarlyStopping(patience=10)])
 
     model.save(f'models/context_encoder{run}.h5')
 
@@ -75,5 +66,8 @@ if __name__ == '__main__':
     run = 0
     for loss in losses:
         for optimizer in optimizers:
+            if run == 0:
+                run += 1
+                continue
             train(loss, optimizer, path, run)
             run += 1
