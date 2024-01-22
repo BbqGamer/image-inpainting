@@ -92,6 +92,22 @@ if __name__ == "__main__":
                 print(
                     f"Batch {i}: d_loss: {d_loss:.4f}, adv_loss: {adv_loss:.4f}, rec_loss: {rec_loss:.4f}, joint_loss: {joint_loss:.4f}")
 
+        d_losses = []
+        adv_losses = []
+        rec_losses = []
+        joint_losses = []
+        for i, (X, y) in enumerate(val):
+            preds = G(X)
+            fake = D(preds)
+            real = D(y + tf.random.normal(shape=y.shape, mean=0.0, stddev=0.1))
+            d_losses.append(tf.reduce_mean(fake) - tf.reduce_mean(real))
+            adv_losses.append(tf.reduce_mean(fake))
+            rec_losses.append(tf.reduce_mean(mse(preds, y)))
+        d_loss_val = np.mean(d_losses)
+        adv_loss_val = np.mean(adv_losses)
+        rec_loss_val = np.mean(rec_losses)
+        joint_loss_val = ADV_LOSS_W * adv_loss_val + REC_LOSS_W * rec_loss_val
+
         if args.wandb:
             wandb.log({
                 "epoch": epoch,
@@ -99,6 +115,10 @@ if __name__ == "__main__":
                 "adv_loss": adv_loss,
                 "rec_loss": rec_loss,
                 "joint_loss": joint_loss,
+                "d_loss_val": d_loss_val,
+                "adv_loss_val": adv_loss_val,
+                "rec_loss_val": rec_loss_val,
+                "joint_loss_val": joint_loss_val
             })
 
             log_images(G, X_log, y_log, epoch)
