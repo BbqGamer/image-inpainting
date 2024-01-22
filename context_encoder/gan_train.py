@@ -30,7 +30,7 @@ def train_step(X, y):
     with tf.GradientTape() as tape:
         preds = G(X)
         fake = D(preds)
-        adv_loss = tf.reduce_mean(fake)
+        adv_loss = -tf.reduce_mean(fake)
         rec_loss = tf.reduce_mean(mse(preds, y))
         joint_loss = ADV_LOSS_W * adv_loss + REC_LOSS_W * rec_loss
     grads = tape.gradient(joint_loss, G.trainable_variables)
