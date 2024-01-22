@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     mse = keras.losses.MeanSquaredError()
     D = get_discriminator()
-    D_optimizer = keras.optimizers.RMSprop(learning_rate=LEARNING_RATE)
+    D_optimizer = keras.optimizers.Adam()
 
     if args.wandb:
         wandb.init(

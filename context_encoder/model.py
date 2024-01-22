@@ -96,7 +96,7 @@ def get_discriminator():
         128, (3, 3), activation='relu', padding='same'))
     discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
     discriminator.add(keras.layers.Flatten())
-    discriminator.add(keras.layers.Dense(256, activation='relu'))
+    discriminator.add(keras.layers.Dense(128, activation='relu'))
     discriminator.add(keras.layers.Dense(1, activation='sigmoid'))
     return discriminator
 
