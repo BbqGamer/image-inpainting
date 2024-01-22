@@ -124,7 +124,7 @@ if __name__ == "__main__":
             log_images(G, X_log, y_log, epoch)
 
     if args.wandb:
+        if args.save:
+            G.save('models/context_encoder_GAN.h5')
+            wandb.save('models/context_encoder_GAN.h5')
         wandb.finish()
-
-    if args.save:
-        G.save(f'models/context_encoder_GAN.h5')
