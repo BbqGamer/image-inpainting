@@ -8,21 +8,29 @@ import wandb
 import numpy as np
 import argparse
 
+NCRITIC = 5
+CLIP_VAL = 0.01
+LEARNING_RATE = 0.00005
+
 
 @tf.function
 def train_step(X, y):
-    with tf.GradientTape() as tape:
-        preds = G(X)
-        fake = D(preds)
-        real = D(y)
-        d_loss = tf.reduce_mean(fake) - tf.reduce_mean(real)
-    grads = tape.gradient(d_loss, D.trainable_variables)
-    D_optimizer.apply_gradients(zip(grads, D.trainable_variables))
+    for _ in range(NCRITIC):
+        with tf.GradientTape() as tape:
+            preds = G(X)
+            fake = D(preds)
+            real = D(y)
+            # Wasserstein loss
+            d_loss = tf.reduce_mean(fake) - tf.reduce_mean(real)
+        grads = tape.gradient(d_loss, D.trainable_variables)
+        D_optimizer.apply_gradients(zip(grads, D.trainable_variables))
+        for w in D.trainable_variables:
+            w.assign(tf.clip_by_value(w, -CLIP_VAL, CLIP_VAL))
 
     with tf.GradientTape() as tape:
         preds = G(X)
         fake = D(preds)
-        adv_loss = tf.reduce_mean(tf.math.log(fake))
+        adv_loss = tf.reduce_mean(fake)
         rec_loss = tf.reduce_mean(mse(preds, y))
         joint_loss = ADV_LOSS_W * adv_loss + REC_LOSS_W * rec_loss
     grads = tape.gradient(joint_loss, G.trainable_variables)
@@ -54,11 +62,11 @@ if __name__ == "__main__":
     X_log, y_log = next(iter(val.take(1)))
 
     G = context_encoder()
-    G_optimizer = keras.optimizers.Adam()
+    G_optimizer = keras.optimizers.RMSprop(learning_rate=LEARNING_RATE)
 
     mse = keras.losses.MeanSquaredError()
     D = get_discriminator()
-    D_optimizer = keras.optimizers.Adam()
+    D_optimizer = keras.optimizers.RMSprop(learning_rate=LEARNING_RATE)
 
     if args.wandb:
         wandb.init(
@@ -66,7 +74,10 @@ if __name__ == "__main__":
             name=args.wandb,
             config={
                 "loss": 'L2 + adversarial',
-                "optimizer": 'adam',
+                "optimizer": 'RMSprop',
+                "learning_rate": LEARNING_RATE,
+                "n_critic": NCRITIC,
+                "clip_val": CLIP_VAL,
                 "epochs": EPOCHS,
                 "batch_size": BATCH_SIZE,
             }
