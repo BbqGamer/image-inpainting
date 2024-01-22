@@ -87,13 +87,13 @@ def get_discriminator():
         64, (3, 3), activation='relu', padding='same'))
     discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
     discriminator.add(keras.layers.Conv2D(
-        128, (3, 3), activation='relu', padding='same'))
+        64, (3, 3), activation='relu', padding='same'))
     discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
     discriminator.add(keras.layers.Conv2D(
         128, (3, 3), activation='relu', padding='same'))
     discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
     discriminator.add(keras.layers.Conv2D(
-        256, (3, 3), activation='relu', padding='same'))
+        128, (3, 3), activation='relu', padding='same'))
     discriminator.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
     discriminator.add(keras.layers.Flatten())
     discriminator.add(keras.layers.Dense(256, activation='relu'))

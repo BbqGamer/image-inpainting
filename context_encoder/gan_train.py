@@ -8,7 +8,7 @@ import wandb
 import numpy as np
 import argparse
 
-NCRITIC = 5
+NCRITIC = 3
 CLIP_VAL = 0.01
 LEARNING_RATE = 0.00005
 
@@ -19,7 +19,7 @@ def train_step(X, y):
         with tf.GradientTape() as tape:
             preds = G(X)
             fake = D(preds)
-            real = D(y)
+            real = D(y + tf.random.normal(shape=y.shape, mean=0.0, stddev=0.1))
             # Wasserstein loss
             d_loss = tf.reduce_mean(fake) - tf.reduce_mean(real)
         grads = tape.gradient(d_loss, D.trainable_variables)
@@ -51,8 +51,8 @@ if __name__ == "__main__":
 
     EPOCHS = args.epochs
     BATCH_SIZE = 32
-    REC_LOSS_W = 0.999
-    ADV_LOSS_W = 0.001
+    REC_LOSS_W = 0.995
+    ADV_LOSS_W = 0.005
 
     train = data_pipeline(args.data + '/train',
                           batch_size=BATCH_SIZE)
