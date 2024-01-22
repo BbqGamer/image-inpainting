@@ -15,8 +15,7 @@ def train_step(X, y):
         preds = G(X)
         fake = D(preds)
         real = D(y)
-        d_loss = -tf.reduce_mean(
-            tf.math.log(real) + tf.math.log(1 - fake))
+        d_loss = tf.reduce_mean(fake) - tf.reduce_mean(real)
     grads = tape.gradient(d_loss, D.trainable_variables)
     D_optimizer.apply_gradients(zip(grads, D.trainable_variables))
 
