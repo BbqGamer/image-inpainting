@@ -111,34 +111,29 @@ def getUnet(input_shape=(256, 256, 3), output_channels=3):
                        activation='relu')(x2)
     x4 = layers.Conv2D(256, 4, strides=2, padding='same',
                        activation='relu')(x3)
-
-    # Bottleneck
-    x5 = layers.Conv2D(512, 4, strides=2, padding='same',
+    x5 = layers.Conv2D(256, 4, strides=2, padding='same',
                        activation='relu')(x4)
 
+    # Bottleneck
+    x6 = layers.Conv2D(512, 4, strides=2, padding='same',
+                       activation='relu')(x5)
+
     # Decoder
-    x6 = layers.Conv2DTranspose(
-        256, 4, strides=2, padding='same', activation='relu')(x5)
-    x7 = layers.Concatenate()([x6, x4])
-    x8 = layers.Conv2DTranspose(
-        128, 4, strides=2, padding='same', activation='relu')(x7)
-    x9 = layers.Concatenate()([x8, x3])
-    x10 = layers.Conv2DTranspose(
-        64, 4, strides=2, padding='same', activation='relu')(x9)
-    x11 = layers.Concatenate()([x10, x2])
-    x12 = layers.Conv2DTranspose(
-        64, 4, strides=2, padding='same', activation='relu')(x11)
-    x13 = layers.Concatenate()([x12, x1])
+    x7 = layers.Conv2DTranspose(
+        256, 4, strides=2, padding='same', activation='relu')(x6)
+    x8 = layers.Concatenate()([x7, x5])
+    x9 = layers.Conv2DTranspose(
+        128, 4, strides=2, padding='same', activation='relu')(x8)
+    x10 = layers.Concatenate()([x9, x4])
+    x11 = layers.Conv2DTranspose(
+        128, 4, strides=2, padding='same', activation='relu')(x10)
+    x12 = layers.Concatenate()([x11, x3])
+    x13 = layers.Conv2DTranspose(
+        64, 4, strides=2, padding='same', activation='relu')(x12)
+    x13 = layers.Concatenate()([x13, x2])
 
-    # Output
-    high_res = layers.Conv2DTranspose(
-        32, 4, strides=2, padding='same', activation='relu')(x13)
-
-    low = layers.Conv2D(16, 4, strides=2, padding='same',
-                        activation='relu')(high_res)
-
-    outputs = layers.Conv2D(output_channels, 4, strides=2,
-                            padding='same', activation='sigmoid')(low)
+    outputs = layers.Conv2D(
+        output_channels, 3, padding='same', activation='sigmoid')(x13)
 
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name='generator')
     return model
