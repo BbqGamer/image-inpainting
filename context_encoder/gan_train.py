@@ -53,6 +53,7 @@ if __name__ == "__main__":
     BATCH_SIZE = 32
     REC_LOSS_W = 0.995
     ADV_LOSS_W = 0.005
+    PATIENCE = 10
 
     train = data_pipeline(args.data + '/train',
                           batch_size=BATCH_SIZE)
@@ -79,10 +80,13 @@ if __name__ == "__main__":
                 "n_critic": NCRITIC,
                 "clip_val": CLIP_VAL,
                 "epochs": EPOCHS,
+                "patience": PATIENCE,
                 "batch_size": BATCH_SIZE,
             }
         )
 
+    patience_left = PATIENCE
+    best_loss = sys.maxsize
     for epoch in range(EPOCHS):
         print(f"Epoch {epoch}/{EPOCHS}")
         for i, (X, y) in enumerate(train):  # type: ignore
@@ -123,8 +127,18 @@ if __name__ == "__main__":
 
             log_images(G, X_log, y_log, epoch)
 
+        if joint_loss_val < best_loss:
+            print(f"New best loss: {joint_loss_val:.4f}")
+            best_loss = joint_loss_val
+            G.save(args.save)
+            patience_left = PATIENCE
+        else:
+            patience_left -= 1
+            if patience_left == 0:
+                print("Early stopping")
+                break
+
     if args.wandb:
         if args.save:
-            G.save('models/context_encoder_GAN.h5')
-            wandb.save('models/context_encoder_GAN.h5')
+            wandb.save(args.save)
         wandb.finish()
