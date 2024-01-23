@@ -1,9 +1,10 @@
+import tensorflow as tf
 import gradio as gr
 import numpy as np
 from keras.saving import load_model
-from context_encoder.model import ChannelwiseFullyConnected
-from context_encoder.train import dice_coef
-from enum import Enum
+from context_encoder.common import ChannelwiseFullyConnected, dice_coef
+print("Loading tensorflow...")
+print(tf.__version__)
 
 MASK_START = 96
 MASK_SIZE = 64
@@ -37,27 +38,31 @@ def load_models(choice):
 
 
 def inpainting(image, choice):
-    model = load_models(choice)
+    if image.shape != (256, 256, 3):
+        image = tf.image.resize(image, (256, 256)).numpy()
 
+    model = load_models(choice)
     cropped = image.copy()
     cropped[MASK_START:MASK_END, MASK_START:MASK_END, :] = 0
-
-    print(cropped.dtype)
-
-    cropped_input = cropped.astype('float32') / 255.0
+    cropped_input = cropped / 255.0
     pred = model.predict(np.array([cropped_input]))
     print(pred.dtype)
     result = cropped.copy()
     result[MASK_START:MASK_END, MASK_START:MASK_END, :] = pred[0] * 255.0
 
-    yield cropped, result
+    yield cropped.astype(np.uint8), result.astype(np.uint8)
 
 
-demo = gr.Interface(
-    inpainting,
-    inputs=[gr.Image(label="Input", type="numpy"),
-            gr.Dropdown(choices=choices, label="Model")],
-    outputs=[gr.Image(label="Cropped"), gr.Image(label="Result")],
-)
+if __name__ == "__main__":
+    demo = gr.Interface(
+        inpainting,
+        inputs=[gr.Image(height=256, width=256, label="Input", type="numpy"),
+                gr.Dropdown(choices=choices, label="Model", value=choices[1])],
+        outputs=[
+            gr.Image(height=256, width=256, label="Cropped"),
+            gr.Image(height=256, width=256, label="Result")
+        ],
+    )
 
-demo.launch()
+    print("Starting server...")
+    demo.launch(server_name='0.0.0.0')
