@@ -1,0 +1,6 @@
+outs:
+- md5: 72452b25f6a55ca774874bca3199d569.dir
+  size: 32569610
+  nfiles: 5
+  hash: md5
+  path: ganunet.md5
