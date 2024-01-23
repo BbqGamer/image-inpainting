@@ -1,6 +1,6 @@
 import sys
 import tensorflow as tf
-from context_encoder.model import context_encoder, get_discriminator
+from context_encoder.model import get_discriminator, getUnet
 from context_encoder.dataset import data_pipeline
 from context_encoder.utils import log_images
 import keras
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     X_log, y_log = next(iter(val.take(1)))
 
-    G = context_encoder()
+    G = getUnet()
     G_optimizer = keras.optimizers.RMSprop(learning_rate=LEARNING_RATE)
 
     mse = keras.losses.MeanSquaredError()
